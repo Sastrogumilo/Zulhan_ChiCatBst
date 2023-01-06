@@ -1,0 +1,7 @@
+django
+django-storages
+sklearn
+plotly
+pandas
+hyperactive
+catboost
