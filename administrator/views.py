@@ -303,8 +303,10 @@ def EDA(request):
         plot_nationality = plot(nationality_data, output_type='div')
         
         #Visualisasi Fitur "Gender" dalam fitur "Class","Relation","StudentAbsenceDays","ParentAnsweringSurvey"
+        data_group_gender = data.groupby(["Gender", "Class"]).size().rename("Count").reset_index()
+
         gender_to_class_data = px.histogram(
-                            data, x = 'Gender', y = 'Class',
+                            data_group_gender, x = 'Gender', y = 'Count',
                             barmode='group',
                             color = 'Class', 
                             title="Graf Fitur Jenis Kelamin Dalam Fitur Kelas ",
@@ -313,10 +315,13 @@ def EDA(request):
                                 "Class": "Kelas"
                                 },
                             )
+        # print(gender_to_class_data)
         plot_gender_to_class = plot(gender_to_class_data, output_type='div')
-        
+
+        data_group_parent = data.groupby(["Gender", "Relation"]).size().rename("Count").reset_index()
+
         gender_to_relation_data = px.histogram(
-                            data, x = 'Gender', y = 'Relation',
+                            data_group_parent, x = 'Gender', y = 'Count',
                             barmode='group',
                             color = 'Relation', 
                             title="Graf Fitur Jenis Kelamin Dalam Fitur Relasi Orang Tua ",
@@ -327,9 +332,10 @@ def EDA(request):
                             )
         plot_gender_to_relation = plot(gender_to_relation_data, output_type='div')
         
-        
+        data_group_absen = data.groupby(["Gender", "StudentAbsenceDays"]).size().rename("Count").reset_index()
+
         gender_to_absen_data = px.histogram(
-                            data, x = 'Gender', y = 'StudentAbsenceDays',
+                            data_group_absen, x = 'Gender', y = 'Count',
                             barmode='group',
                             color = 'StudentAbsenceDays', 
                             title="Graf Fitur Jenis Kelamin Dalam Fitur Absen Siswa ",
@@ -340,9 +346,10 @@ def EDA(request):
                             )
         plot_gender_to_absen = plot(gender_to_absen_data, output_type='div')
         
+        data_group_parentSurvey = data.groupby(["Gender", "ParentAnsweringSurvey"]).size().rename("Count").reset_index()
         
         gender_to_parentSurvey_data = px.histogram(
-                            data, x = 'Gender', y = 'ParentAnsweringSurvey',
+                            data_group_parentSurvey, x = 'Gender', y = 'Count',
                             barmode='group',
                             color = 'ParentAnsweringSurvey', 
                             title="Graf Fitur Jenis Kelamin Dalam Fitur Survey Orang Tua ",
@@ -353,9 +360,10 @@ def EDA(request):
                             )
         plot_gender_to_parentSurvey = plot(gender_to_parentSurvey_data, output_type='div')
         
+        data_group_topic = data.groupby(["Gender", "Topic"]).size().rename("Count").reset_index()
         
         gender_to_topic_data = px.histogram(
-                            data, x = 'Gender', y = 'Topic',
+                            data_group_topic, x = 'Gender', y = 'Count',
                             barmode='group',
                             color = 'Topic', 
                             title="Graf Fitur Jenis Kelamin Dalam Fitur Survey Orang Tua ",
@@ -365,9 +373,13 @@ def EDA(request):
                                 },
                             )
         plot_gender_to_topic = plot(gender_to_topic_data, output_type='div')
+
+        print(data.head(3))
+
+        data_group_nationality = data.groupby(["Gender", "Nationality"]).size().rename("Count").reset_index()
         
         gender_to_nationality_data = px.histogram(
-                            data, x = 'Gender', y = 'Nationality',
+                            data_group_nationality, x = 'Gender', y = 'Count',
                             barmode='group',
                             color = 'Nationality', 
                             title="Graf Fitur Jenis Kelamin Dalam Fitur Kebangsaan ",
@@ -586,7 +598,7 @@ def Catboost(request):
         n_scores = cross_val_score(model, X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1, error_score='raise')
         n_predict = cross_val_predict(model, X_train, y_train, cv=10)
         # print(n_predict)
-        print('Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+        # print('Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
         # fit the model on the whole dataset
         Catboost_model = CatBoostClassifier(verbose=0, n_estimators=100)
         Catboost_model.fit(X_train, y_train)
@@ -666,7 +678,8 @@ def Catboost(request):
 
         
         return render(request, 'administrator/catboost.html',{'Report': plot_report_nb, 
-                                                            'skor_acc':Score, 
+                                                            'train_acc': n_scores,
+                                                            'val_acc':Score, 
                                                             'plot_div_conf_nb': plot_conf_nb,
                                                             })
 
