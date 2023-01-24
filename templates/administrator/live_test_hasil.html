@@ -1,14 +1,13 @@
 {% extends "layouts/administrator.html" %}
 {% load static %}
 
-{% block NaiveBayes_Algen %}
+{% block live_test_hasil %}
 active-sub
 {% endblock %}
 
 {% block title %}
 Hasil | Klasifikasi Analisis Sentimen Movie Review
 {% endblock %}
-
 
 {% block css %}
 <!--DataTables [ OPTIONAL ]-->
@@ -29,14 +28,8 @@ Hasil | Klasifikasi Analisis Sentimen Movie Review
 <p>KLASIFIKASI ANALISIS SENTIMEN MOVIE REVIEW DENGAN METODE SUPPORT VECTOR MACHINE MENGGUNAKAN KERNEL RADIAL BASIS FUNCTION</p>
 </div>
         </div>
-        
-        {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-            <li  {% if message.tags %} class=" {{ message.tags }} " {% endif %}> {{ message }} </li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+
+
     <!--Page content-->
     <!--===================================================-->
     <div id="page-content">
@@ -46,14 +39,15 @@ Hasil | Klasifikasi Analisis Sentimen Movie Review
         <div class="panel-heading">
           <h3 class="panel-title">Input Jumlah Fitur yang dipakai untuk training</h3>
         </div>
-        <form method="GET" action="{% url 'administrator:hasil_catboost_chi2' %}">
+        <form method="GET" action="{% url 'administrator:live_test_hasil' %}">
           <div class="panel-body">
             <div class="row">
               <div class="col-sm-6">
-                <div class="form-group">
-                  <label class="control-label">Jumlah Fitur</label>
-                  <input type="text" class="form-control" name="jumlah_fitur" placeholder="Bilangan Bulat, Contoh: 10">
-                </div>
+
+                {%for data in div%}
+                  {{ data | safe }}
+                {%endfor%}
+
               </div>
                              
             </div>
@@ -72,37 +66,16 @@ Hasil | Klasifikasi Analisis Sentimen Movie Review
           <div class="panel-body demo-nifty-btn">
             <table id="demo-dt-basic3" class="table table-striped table-bordered" cellspacing="0" width="100%">
 
-              <!--Train ACC-->
-              <thead>
-                  <tr>
-                      <th>Train Akurasi</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  <tr>
-                      <td>0%</td>
-                  </tr>
-              </tbody>
-              <!--Val Acc-->
-              <thead>
-                <tr>
-                    <th>Validasi Akurasi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>0%</td>
-                </tr>
-            </tbody>
+             
             <!--Fitur-->
             <thead>
               <tr>
-                  <th>Fitur yang Terpilih</th>
+                  <th>Hasil Klasifikasi</th>
               </tr>
           </thead>
           <tbody>
               <tr>
-                  <td>Belum Ada</td>
+                  <td>{{ kelas.keterangan }}</td>
               </tr>
           </tbody>
           </table>

@@ -16,6 +16,8 @@ urlpatterns = [
     path('hasil_catboost_chi2/', views.hasil_catboost_chi2, name='hasil_catboost_chi2'),
     #path('hasilsvmrbf/', views.hasilsvmrbf, name='hasilsvmrbf'),
     #path('SVMRBFIG/', views.SVMRBFIG, name='SVMRBFIG'),
-
-
+    path('live_test/', views.live_test, name="live_test"),
+    path('live_test_hasil/', views.live_test_hasil, name="live_test_hasil"),
+    path('live_test2/', views.live_test2, name="live_test2"),
+    path('live_test_hasil2/', views.live_test_hasil2, name="live_test_hasil2")
 ]

@@ -246,14 +246,14 @@
                                             </span>
                                         </a>
                                     </li>
-                                    <li class="{% block split_data_chi2 %} {% endblock %}">
+                                    <!-- <li class="{% block split_data_chi2 %} {% endblock %}">
                                         <a href="{% url 'administrator:split_data_chi2' %}">
                                             <i class="demo-pli-file-txt"></i>
                                             <span class="menu-title">
                                                 Split Data + Chi²
                                             </span>
                                         </a>
-                                    </li>
+                                    </li> -->
                                     <!--Menu list item-->
                                     <li class="{% block Catboost %} {% endblock %}">
                                         <a href="{% url 'administrator:Catboost' %}">
@@ -269,6 +269,24 @@
                                             <i class="demo-psi-bar-chart"></i>
                                             <span class="menu-title">
                                                 Klasifikasi Catboost + Chi²
+                                            </span>
+                                        </a>
+                                    </li>
+
+                                    <li class="{% block live_test %} {% endblock %}">
+                                        <a href="{% url 'administrator:live_test' %}">
+                                            <i class="demo-pli-tactic"></i>
+                                            <span class="menu-title">   
+                                                Live Test
+                                            </span>
+                                        </a>
+                                    </li>
+
+                                    <li class="{% block live_test2 %} {% endblock %}">
+                                        <a href="{% url 'administrator:live_test2' %}">
+                                            <i class="demo-pli-tactic"></i>
+                                            <span class="menu-title">   
+                                                Live Test Form
                                             </span>
                                         </a>
                                     </li>

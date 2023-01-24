@@ -54,6 +54,8 @@ from sklearn.model_selection import cross_val_score, cross_val_predict
 from sklearn.model_selection import RepeatedStratifiedKFold
 from matplotlib import pyplot
 
+import pickle
+
 
 # Create your views here.
 default_test_size = 0.2
@@ -222,7 +224,6 @@ def dataset(request):
         # # print(dataset)
         
         return render(request, 'administrator/dataset.html',{'dataset': dataset})
-
 
 @login_required(login_url=settings.LOGIN_URL)
 def EDA(request):
@@ -688,7 +689,6 @@ def Catboost(request):
         return redirect('/administrator/dataset/')
         pass
 
-
 @login_required(login_url=settings.LOGIN_URL)
 def Catboost_Chi2(request):
     return render(request, 'administrator/catboosts_chi2.html')
@@ -739,6 +739,10 @@ def hasil_catboost_chi2(request):
         Catboost_model2 = CatBoostClassifier(verbose=0, n_estimators=100)
         Catboost_model2.fit(X_train_fs, y_train)
         # make a single prediction
+
+         # Simpan Model
+        # pickle.dump(Catboost_Chi2, open(default_storage.path("model_catboost_chi.pkl"), 'wb'))
+        CatBoostClassifier.save_model(Catboost_model2, default_storage.path("model_catboost_chi.cbm"))
 
         y_pred = Catboost_model2.predict(X_test_fs)
         acc = accuracy_score(y_test,y_pred)
@@ -822,3 +826,344 @@ def hasil_catboost_chi2(request):
         messages.error(request,'Dataset belum diinputkan!')
         return redirect('/administrator/dataset/')
         pass
+
+@login_required(login_url=settings.LOGIN_URL)
+def live_test(request):
+    data = pd.read_csv(default_storage.path('dataset.csv'))
+    data_unique = pd.Series({col:data[col].unique() for col in data})
+    
+    arr_opt = []
+
+    data_key = data_unique.keys()
+
+    for key in data_key[:-1]:
+        
+        if(np.issubdtype(data_unique[key].dtype, np.integer)):
+            form_group = '<div class="form-group">\
+                            <label class="control-label">'+str(key)+'</label>\
+                            <input type=number class="form-control" name='+str(key)+'>\
+                        </div>'
+
+        else:
+            form_group = '<div class="form-group">\
+                            <label class="control-label">'+str(key)+'</label>\
+                                <select class="form-control" name='+str(key)+'>'
+
+            for value in data_unique[key]:
+                form_group += '<option value="'+str(value)+'">'+str(value)+'</option>'
+
+            form_group += '</select>\
+                            </div>'
+            
+        arr_opt.append(form_group)
+
+    return render(request, 'administrator/live_test.html', {'div': arr_opt})
+    
+@login_required(login_url=settings.LOGIN_URL)
+def live_test_hasil(request):
+    
+    if request.method == 'GET':
+
+        data_request = request.GET.items()
+
+        hasil_klasifikasi = {}
+
+        if default_storage.exists('model_catboost_chi.cbm') == False:
+            messages.error(request,'Model belum terbuat')
+            return redirect('/administrator/Catboost_Chi2/')
+            
+        else:
+            data_raw = pd.read_csv(default_storage.path('dataset.csv'))
+            data_unique = pd.Series({col:data_raw[col].unique() for col in data_raw})
+            
+            arr_opt = []
+
+            data_key = data_unique.keys()
+            data_key = data_key[:-1]
+
+            for key in data_key[:-1]:
+                
+                if(np.issubdtype(data_unique[key].dtype, np.integer)):
+                    form_group = '<div class="form-group">\
+                                    <label class="control-label">'+str(key)+'</label>\
+                                    <input type=number class="form-control" name='+str(key)+'>\
+                                </div>'
+
+                else:
+                    form_group = '<div class="form-group">\
+                                    <label class="control-label">'+str(key)+'</label>\
+                                        <select class="form-control" name='+str(key)+'>'
+
+                    for value in data_unique[key]:
+                        form_group += '<option value="'+str(value)+'">'+str(value)+'</option>'
+
+                    form_group += '</select>\
+                                    </div>'
+                    
+                arr_opt.append(form_group)
+            
+            dat = {}
+            for data in data_request:
+                i = 0
+                key = data[i]
+                value = request.GET[str(key)]
+                if(value.isnumeric() == True):
+                    dat[key] = int(value)
+                else:
+                    dat[key] = value   
+                
+
+                
+            # print(dat)
+            # print(len(data_key.tolist()))
+            data_lama = pd.read_csv(default_storage.path('dataset.csv'))
+            data_lama = data_lama.iloc[:, :-1]
+            data_baru = pd.DataFrame(dat, columns=data_key.tolist(), index=[0])
+
+            arr_data = [data_lama, data_baru]
+            data = pd.concat(arr_data)
+
+            Features = data.drop('Gender',axis=1)
+            Target = data['Gender']
+            label = LabelEncoder()
+            Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+            for col in Cat_Colums:
+                Features[col] = label.fit_transform(Features[col])
+
+            #Semester Encoding
+            Features = data.drop('Semester',axis=1)
+            Target = data['Semester']
+            label = LabelEncoder()
+            Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+            for col in Cat_Colums:
+                Features[col] = label.fit_transform(Features[col])
+
+            #Parent Survey Encoding
+            Features = data.drop('ParentAnsweringSurvey',axis=1)
+            Target = data['ParentAnsweringSurvey']
+            label = LabelEncoder()
+            Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+            for col in Cat_Colums:
+                Features[col] = label.fit_transform(Features[col])
+
+            #Relational Encoding
+            Features = data.drop('Relation',axis=1)
+            Target = data['Relation']
+            label = LabelEncoder()
+            Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+            for col in Cat_Colums:
+                Features[col] = label.fit_transform(Features[col])
+
+            #Parent Saticfactional
+            Features = data.drop('ParentSchoolSatisfaction',axis=1)
+            Target = data['ParentSchoolSatisfaction']
+            label = LabelEncoder()
+            Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+            for col in Cat_Colums:
+                Features[col] = label.fit_transform(Features[col])
+
+            #Students Absence
+            Features = data.drop('StudentAbsenceDays',axis=1)
+            Target = data['StudentAbsenceDays']
+            label = LabelEncoder()
+            Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+            for col in Cat_Colums:
+                Features[col] = label.fit_transform(Features[col])
+            
+            last_data = Features.tail(1)
+            last_data.to_csv('media/fitur_live_test.csv', index=False)
+            
+            # Mulai Klasifikasi
+            # loaded_model = pickle.load(open(default_storage.path('model_catboost_chi.pkl'), 'rb'))
+            model = CatBoostClassifier()
+            loaded_model = model.load_model('media/model_catboost_chi.cbm')
+            acc = loaded_model.predict(last_data)
+            
+            if(acc[0][0] == "L"):
+                hasil_klasifikasi = {
+                    'label': "L",
+                    'keterangan': "Low"
+                }
+            elif(acc[0][0] == "H"):
+                hasil_klasifikasi = {
+                    'label': "H",
+                    "keterangan": "High"
+                }
+            else:
+                hasil_klasifikasi = {
+                    'label': "M",
+                    "keterangan": "Medium"
+                }
+
+
+
+            return render(request, 'administrator/live_test_hasil.html', {'div': arr_opt, 'kelas': hasil_klasifikasi})
+    else:
+        messages.error(request,'Dataset belum diinputkan!')
+        return redirect('/administrator/dataset/')
+        pass
+    
+@login_required(login_url=settings.LOGIN_URL)
+def live_test2(request):
+    data = pd.read_csv(default_storage.path('dataset.csv'))
+    data_unique = pd.Series({col:data[col].unique() for col in data})
+    
+    arr_opt = []
+
+    data_key = data_unique.keys()
+
+    for key in data_key[:-1]:
+                
+        if(np.issubdtype(data_unique[key].dtype, np.integer)):
+            form_group = '<div class="form-group">\
+                            <label class="control-label">'+str(key)+'</label>\
+                            <input type=number class="form-control" name='+str(key)+'>\
+                        </div>'
+
+        else:
+            form_group = '<div class="form-group">\
+                            <label class="control-label">'+str(key)+'</label>\
+                            <input type=text class="form-control" name='+str(key)+'>\
+                        </div>'
+            
+        arr_opt.append(form_group)
+    
+    return render(request, 'administrator/live_test2.html', {'div': arr_opt})
+    
+@login_required(login_url=settings.LOGIN_URL)
+def live_test_hasil2(request):
+    
+    if request.method == 'GET':
+
+        data_request = request.GET.items()
+
+        hasil_klasifikasi = {}
+
+        if default_storage.exists('model_catboost_chi.cbm') == False:
+            messages.error(request,'Model belum terbuat')
+            return redirect('/administrator/Catboost_Chi2/')
+            
+        else:
+            data_raw = pd.read_csv(default_storage.path('dataset.csv'))
+            data_unique = pd.Series({col:data_raw[col].unique() for col in data_raw})
+            
+            arr_opt = []
+
+            data_key = data_unique.keys()
+            data_key = data_key[:-1]
+
+        for key in data_key[:-1]:
+                    
+            if(np.issubdtype(data_unique[key].dtype, np.integer)):
+                form_group = '<div class="form-group">\
+                                <label class="control-label">'+str(key)+'</label>\
+                                <input type=number class="form-control" name='+str(key)+'>\
+                            </div>'
+
+            else:
+                form_group = '<div class="form-group">\
+                                <label class="control-label">'+str(key)+'</label>\
+                                <input type=text class="form-control" name='+str(key)+'>\
+                            </div>'
+                
+            arr_opt.append(form_group)
+            
+        dat = {}
+        for data in data_request:
+            i = 0
+            key = data[i]
+            value = request.GET[str(key)]
+            if(value.isnumeric() == True):
+                dat[key] = int(value)
+            else:
+                dat[key] = value   
+            
+
+            
+        # print(dat)
+        # print(len(data_key.tolist()))
+        data_lama = pd.read_csv(default_storage.path('dataset.csv'))
+        data_lama = data_lama.iloc[:, :-1]
+        data_baru = pd.DataFrame(dat, columns=data_key.tolist(), index=[0])
+
+        arr_data = [data_lama, data_baru]
+        data = pd.concat(arr_data)
+
+        Features = data.drop('Gender',axis=1)
+        Target = data['Gender']
+        label = LabelEncoder()
+        Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+        for col in Cat_Colums:
+            Features[col] = label.fit_transform(Features[col])
+
+        #Semester Encoding
+        Features = data.drop('Semester',axis=1)
+        Target = data['Semester']
+        label = LabelEncoder()
+        Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+        for col in Cat_Colums:
+            Features[col] = label.fit_transform(Features[col])
+
+        #Parent Survey Encoding
+        Features = data.drop('ParentAnsweringSurvey',axis=1)
+        Target = data['ParentAnsweringSurvey']
+        label = LabelEncoder()
+        Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+        for col in Cat_Colums:
+            Features[col] = label.fit_transform(Features[col])
+
+        #Relational Encoding
+        Features = data.drop('Relation',axis=1)
+        Target = data['Relation']
+        label = LabelEncoder()
+        Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+        for col in Cat_Colums:
+            Features[col] = label.fit_transform(Features[col])
+
+        #Parent Saticfactional
+        Features = data.drop('ParentSchoolSatisfaction',axis=1)
+        Target = data['ParentSchoolSatisfaction']
+        label = LabelEncoder()
+        Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+        for col in Cat_Colums:
+            Features[col] = label.fit_transform(Features[col])
+
+        #Students Absence
+        Features = data.drop('StudentAbsenceDays',axis=1)
+        Target = data['StudentAbsenceDays']
+        label = LabelEncoder()
+        Cat_Colums = Features.dtypes.pipe(lambda Features: Features[Features=='object']).index
+        for col in Cat_Colums:
+            Features[col] = label.fit_transform(Features[col])
+        
+        last_data = Features.tail(1)
+        last_data.to_csv('media/fitur_live_test.csv', index=False)
+        
+        # Mulai Klasifikasi
+        # loaded_model = pickle.load(open(default_storage.path('model_catboost_chi.pkl'), 'rb'))
+        model = CatBoostClassifier()
+        loaded_model = model.load_model('media/model_catboost_chi.cbm')
+        acc = loaded_model.predict(last_data)
+        
+        if(acc[0][0] == "L"):
+            hasil_klasifikasi = {
+                'label': "L",
+                'keterangan': "Low"
+            }
+        elif(acc[0][0] == "H"):
+            hasil_klasifikasi = {
+                'label': "H",
+                "keterangan": "High"
+            }
+        else:
+            hasil_klasifikasi = {
+                'label': "M",
+                "keterangan": "Medium"
+            }
+
+        return render(request, 'administrator/live_test_hasil2.html', {'div': arr_opt, 'kelas': hasil_klasifikasi})
+    else:
+        messages.error(request,'Dataset belum diinputkan!')
+        return redirect('/administrator/dataset/')
+        pass
+
